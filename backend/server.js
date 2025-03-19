@@ -8,6 +8,7 @@ import authRoutes from './routes/authentication.routes.js';
 import { authMiddleware } from './middleware/auth.middleware.js';
 import { sessionMiddleware } from './middleware/session.middleware.js';
 import { ipBlocklistMiddleware } from './middleware/security.middleware.js';
+import { globalLimiter, authLimiter, apiLimiter, healthLimiter } from './middleware/rate-limit.middleware.js';
 
 // Try to import Firebase admin
 let firebaseAdmin = null;
@@ -38,7 +39,15 @@ app.use(express.json({ limit: '1mb' })); // Limit request size
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Rate limiting for all routes
+app.use(globalLimiter); // Apply global rate limiting first
+
+// IP blocklist middleware
 app.use(ipBlocklistMiddleware);
+
+// Apply rate limiters to specific routes
+app.use('/api/auth', authLimiter); // Apply stricter limits to auth routes
+app.use('/api', apiLimiter); // Apply API rate limits to all API routes
+app.use('/health', healthLimiter); // Apply separate limiter for health checks
 
 // Routes
 app.use('/api/auth', authRoutes);
