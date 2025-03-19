@@ -26,9 +26,16 @@ if (fs.existsSync(envPath)) {
 console.log("Environment loaded:", {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: process.env.PORT || '5000',
+  // Firebase Admin SDK
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? "✓ Set" : "✗ Not set",
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? "✓ Set" : "✗ Not set",
-  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? "✓ Set" : "✗ Not set"
+  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? "✓ Set" : "✗ Not set",
+  // Firebase Client SDK
+  FIREBASE_API_KEY: process.env.FIREBASE_API_KEY ? "✓ Set" : "✗ Not set",
+  FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? "✓ Set" : "✗ Not set",
+  FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ? "✓ Set" : "✗ Not set",
+  FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID ? "✓ Set" : "✗ Not set",
+  FIREBASE_APP_ID: process.env.FIREBASE_APP_ID ? "✓ Set" : "✗ Not set"
 });
 
 export default result;

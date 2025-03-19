@@ -46,6 +46,11 @@ This guide explains how to deploy the Artify backend to Azure App Service using 
    | FIREBASE_PROJECT_ID | your-project-id | From Firebase console |
    | FIREBASE_CLIENT_EMAIL | your-client-email@firebase.com | From Firebase service account |
    | FIREBASE_PRIVATE_KEY | -----BEGIN PRIVATE KEY-----\nxxxx\n-----END PRIVATE KEY----- | From Firebase service account json |
+   | FIREBASE_API_KEY | your-api-key | From Firebase web app config |
+   | FIREBASE_AUTH_DOMAIN | your-project-id.firebaseapp.com | From Firebase web app config |
+   | FIREBASE_STORAGE_BUCKET | your-project-id.appspot.com | From Firebase web app config |
+   | FIREBASE_MESSAGING_SENDER_ID | your-sender-id | From Firebase web app config |
+   | FIREBASE_APP_ID | your-app-id | From Firebase web app config |
    | NODE_ENV | production | Set as production for deployment |
    | PORT | 5000 | The port your app will run on |
    | FRONTEND_URL | https://your-frontend-url.com | For CORS settings |
