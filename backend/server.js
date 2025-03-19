@@ -9,6 +9,17 @@ import { authMiddleware } from './middleware/auth.middleware.js';
 import { sessionMiddleware } from './middleware/session.middleware.js';
 import { ipBlocklistMiddleware } from './middleware/security.middleware.js';
 
+// Try to import Firebase admin
+let firebaseAdmin = null;
+try {
+  const adminModule = await import('./config/firebase-admin.js');
+  firebaseAdmin = adminModule.default;
+  console.log('Firebase Admin SDK imported successfully');
+} catch (error) {
+  console.error('Failed to import Firebase Admin SDK:', error.message);
+  console.error('Application will continue without Firebase Admin functionality');
+}
+
 // Initialize express app
 const app = express();
 
@@ -35,6 +46,16 @@ app.use('/api/auth', authRoutes);
 // Basic route
 app.get('/', (req, res) => {
   res.send('API is running');
+});
+
+// Health check route for monitoring
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    environment: process.env.NODE_ENV || 'development',
+    firebase: firebaseAdmin ? 'initialized' : 'not initialized',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Protected example route

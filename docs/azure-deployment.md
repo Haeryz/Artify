@@ -39,13 +39,18 @@ This guide explains how to deploy the Artify backend to Azure App Service using 
 
 1. After deployment, go to your App Service resource
 2. In the left menu, select "Configuration" under "Settings"
-3. Add all required environment variables from your `.env` file:
-   - FIREBASE_PROJECT_ID
-   - FIREBASE_CLIENT_EMAIL
-   - FIREBASE_PRIVATE_KEY
-   - MONGO_URI (if using MongoDB)
-   - NODE_ENV=production
-   - Other app-specific variables
+3. Add all required environment variables:
+
+   | Name | Value | Note |
+   |------|-------|------|
+   | FIREBASE_PROJECT_ID | your-project-id | From Firebase console |
+   | FIREBASE_CLIENT_EMAIL | your-client-email@firebase.com | From Firebase service account |
+   | FIREBASE_PRIVATE_KEY | -----BEGIN PRIVATE KEY-----\nxxxx\n-----END PRIVATE KEY----- | From Firebase service account json |
+   | NODE_ENV | production | Set as production for deployment |
+   | PORT | 5000 | The port your app will run on |
+   | FRONTEND_URL | https://your-frontend-url.com | For CORS settings |
+
+   > **IMPORTANT:** For the FIREBASE_PRIVATE_KEY, you need to include the entire key INCLUDING the newline characters (represented as \n). When copying from a JSON file, the key might appear as a single line with escaped newlines - keep it exactly as is.
 
 4. Click "Save" and confirm
 
@@ -66,13 +71,33 @@ This guide explains how to deploy the Artify backend to Azure App Service using 
 
 1. Go to your App Service URL (https://your-app-name.azurewebsites.net)
 2. You should see the "API is running" message
-3. Test the API endpoints using Postman or another API testing tool
+3. Visit the health endpoint (https://your-app-name.azurewebsites.net/health) to check system status
+4. Test the API endpoints using Postman or another API testing tool
 
 ## Troubleshooting
 
-If you encounter issues:
+### Common Issue: Firebase Configuration Not Found
 
-1. Check "Log stream" in the Azure portal
-2. Review "Application logs" in the "Monitoring" section
-3. Verify that all environment variables are correctly set
-4. Ensure your container has no issues when running locally
+If you see errors like `ERR_MODULE_NOT_FOUND, url: file:///usr/src/app/config/firebase.js`:
+
+1. Make sure your Docker image includes all required configuration files
+2. Check that all Firebase environment variables are correctly set in Azure App Service Configuration
+3. Verify the format of FIREBASE_PRIVATE_KEY, especially the newline characters (\n)
+4. Try restarting the App Service after updating environment variables
+
+### Container Fails to Start
+
+1. Check the Log Stream in Azure Portal under "Monitoring" to see error messages
+2. Verify environment variables are correctly set
+3. Test the Docker image locally first:
+   ```bash
+   docker run -p 5000:5000 -e FIREBASE_PROJECT_ID=xxx -e FIREBASE_CLIENT_EMAIL=xxx -e FIREBASE_PRIVATE_KEY="xxx" yourusername/artify-backend
+   ```
+4. Try increasing the App Service startup time in Configuration > General Settings
+
+### Checking Logs
+
+1. In Azure Portal, go to your App Service
+2. Under "Monitoring", select "Log stream"
+3. View real-time logs of your application
+4. For more detailed logs, enable "App Service Logs" under "Monitoring"
