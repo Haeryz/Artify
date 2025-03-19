@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
-import { sessionSecurity } from '../model/security.js';
+import { sessionSecurity } from '../model/security.model.js';
 
 // Session collection in Firestore
 const SESSION_COLLECTION = 'sessions';

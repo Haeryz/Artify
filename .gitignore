@@ -1,0 +1,9 @@
+# ...existing code...
+
+# Docker
+.dockerignore
+*.env
+!.env.example
+
+# Azure
+.azure

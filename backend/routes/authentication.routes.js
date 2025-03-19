@@ -7,7 +7,7 @@ import {
   updateUserProfile,
   validateUserSession,
   changePassword
-} from '../controller/authentication.controller.js';
+} from '../controllers/authentication.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { sessionMiddleware } from '../middleware/session.middleware.js';
 import { ipBlocklistMiddleware, passwordStrengthMiddleware } from '../middleware/security.middleware.js';

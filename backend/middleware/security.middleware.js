@@ -1,4 +1,4 @@
-import { passwordPolicy, rateLimiting } from '../model/security.js';
+import { passwordPolicy, rateLimiting } from '../model/security.model.js';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
 

@@ -13,7 +13,7 @@ import {
   updateDoc, 
   serverTimestamp 
 } from 'firebase/firestore';
-import { USERS_COLLECTION } from '../model/authentication.js';
+import { USERS_COLLECTION } from '../model/authentication.model.js';
 import { createSession, deleteSession, validateSession } from '../middleware/session.middleware.js';
 import { validatePasswordStrength, trackLoginAttempt } from '../middleware/security.middleware.js';
 
