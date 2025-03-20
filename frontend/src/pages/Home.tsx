@@ -17,6 +17,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { FaPlus, FaRobot, FaUpload, FaSearch, FaImage } from "react-icons/fa";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Mock data for demonstration
 const mockProjects = [
@@ -55,6 +56,7 @@ const mockProjects = [
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter] = useState("recent"); // Could be expanded with more filter options
+  const navigate = useNavigate();
   
   // Modal states
   const [aiModalOpened, { open: openAiModal, close: closeAiModal }] = useDisclosure(false);
@@ -86,6 +88,18 @@ const Home = () => {
       closeImportModal();
       setImportedFile(null);
     }
+  };
+
+  // Handle create empty project
+  const handleCreateEmptyProject = () => {
+    // Generate a unique ID for the new project
+    const newProjectId = Date.now().toString();
+    navigate(`/canvas/${newProjectId}`);
+  };
+
+  // Handle project card click
+  const handleProjectClick = (projectId: number) => {
+    navigate(`/canvas/${projectId}`);
   };
 
   return (
@@ -155,7 +169,11 @@ const Home = () => {
 
       {/* Project Creation Actions */}
       <Group justify="center" mb="xl">
-        <Button leftSection={<FaPlus size={16} />} variant="filled">
+        <Button 
+          leftSection={<FaPlus size={16} />} 
+          variant="filled"
+          onClick={handleCreateEmptyProject}
+        >
           Create Empty Project
         </Button>
         <Button 
@@ -192,7 +210,15 @@ const Home = () => {
       {filteredProjects.length > 0 ? (
         <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="md">
           {filteredProjects.map((project) => (
-            <Card key={project.id} shadow="sm" padding="md" radius="md" withBorder>
+            <Card 
+              key={project.id} 
+              shadow="sm" 
+              padding="md" 
+              radius="md" 
+              withBorder
+              onClick={() => handleProjectClick(project.id)}
+              style={{ cursor: 'pointer' }}
+            >
               <Card.Section>
                 <Image
                   src={project.image}

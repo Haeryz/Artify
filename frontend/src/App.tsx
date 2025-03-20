@@ -10,6 +10,7 @@ import Pricing from './pages/Pricing'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Home from './pages/Home'
+import Canvas from './pages/Canvas'
 
 // Get the base URL for the router (useful for subdirectory deployments)
 const getBasename = () => {
@@ -48,6 +49,7 @@ const App = memo(function App() {
       <AppShell.Main>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/canvas/:id?" element={<Canvas />} />
           <Route path="/authentication" element={<Authentication />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
