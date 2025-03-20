@@ -4,12 +4,12 @@ import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 // Only include client-side safe configuration values
 // These values are already publicly visible in the browser so they are not sensitive
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyA3xvHRb-XRSnUZB2oEvmKAFXpqFe137ss",
+  authDomain: "artify-32f50.firebaseapp.com",
+  projectId: "artify-32f50",
+  storageBucket: "artify-32f50.firebasestorage.app",
+  messagingSenderId: "253207852255",
+  appId: "1:253207852255:web:e0dc5068014d733b19656a"
 };
 
 // Initialize Firebase client SDK only for authentication
