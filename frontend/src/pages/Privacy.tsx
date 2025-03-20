@@ -8,8 +8,13 @@ const Privacy = () => {
       <Text c="dimmed">Last updated: {new Date().toLocaleDateString()}</Text>
       <Space h="md" />
 
+      <Text fw={700}>
+        This Privacy Policy is issued by Hariz Faizul, operating as "Artify" (sole proprietor).
+      </Text>
+      <Space h="sm" />
+
       <Text>
-        This Privacy Policy describes how Artify Inc. ("we," "our," or "us")
+        This Privacy Policy describes how Hariz Faizul ("we," "our," or "us")
         collects, uses, and discloses your personal information when you use our
         platform, "Artify," an AI-powered photo editing service available
         through our website.
@@ -19,6 +24,15 @@ const Privacy = () => {
       <Divider />
       <Space h="md" />
 
+      <Title order={2}>AI Technology</Title>
+      <Text>
+        Artify uses Google's Gemini API and other artificial intelligence technologies to process, 
+        edit, enhance, and generate images. When you use our services, your images may be processed 
+        by these AI systems in accordance with this Privacy Policy and our Terms and Conditions.
+      </Text>
+
+      <Space h="md" />
+      
       <Title order={2}>1. Information We Collect</Title>
       <Text>
         <strong>Personal Information:</strong> When you create an account, we
@@ -243,7 +257,10 @@ const Privacy = () => {
         If you have any questions about this Privacy Policy, please contact us
         at:
       </Text>
+      <Text>Business Name: Artify (owned by Hariz Faizul)</Text>
       <Text>Email: haeriz42069@gmail.com</Text>
+      <Text>Address: 123 Main Street, Jakarta, Indonesia 12345</Text>
+      <Text>Phone: +62 812-3456-7890</Text>
 
       <Space h="md" />
 

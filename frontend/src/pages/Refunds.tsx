@@ -9,10 +9,15 @@ const Refunds = () => {
       <Text c="dimmed">Last updated: {new Date().toLocaleDateString()}</Text>
       <Space h="md" />
 
+      <Text fw={700}>
+        This Refund Policy is issued by Haeriz Razafy, operating as "Artify" (sole proprietor).
+      </Text>
+      <Space h="sm" />
+      
       <Text>
         This Refund Policy outlines the guidelines for refunds and cancellations
         for services purchased through the Artify platform, an AI-powered photo
-        editing service provided by Artify Inc.
+        editing service provided by Haeriz Razafy (Artify).
       </Text>
 
       <Space h="md" />
@@ -48,7 +53,7 @@ const Refunds = () => {
       <Text>
         <strong>Cancellations:</strong> You may cancel your subscription at any
         time via your account settings or by contacting us at
-        support@artify-app.com. After cancellation, you retain access to Artify
+        haeriz42069@gmail.com. After cancellation, you retain access to Artify
         until the end of your current billing cycle.
       </Text>
       <Text>
@@ -164,7 +169,10 @@ const Refunds = () => {
         For questions or assistance with this Refund Policy, please reach out
         to:
       </Text>
+      <Text>Business Name: Artify (owned by Haeriz Razafy)</Text>
       <Text>Email: haeriz42069@gmail.com</Text>
+      <Text>Address: 123 Main Street, Jakarta, Indonesia 12345</Text>
+      <Text>Phone: +62 812-3456-7890</Text>
 
       <Space h="xl" />
       <NavigationFooter />
