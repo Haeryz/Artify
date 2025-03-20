@@ -4,6 +4,7 @@ import Authentication from './pages/Authentication'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import Refunds from './pages/Refunds'
+import Pricing from './pages/Pricing'
 
 // Get the base URL for the router (useful for subdirectory deployments)
 const getBasename = () => {
@@ -20,6 +21,7 @@ const App = memo(function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/refunds" element={<Refunds />} />
+        <Route path="/pricing" element={<Pricing />} />
       </Routes>
     </Router>
   )

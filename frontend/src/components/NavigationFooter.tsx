@@ -5,6 +5,9 @@ export function NavigationFooter() {
   return (
     <Container py="lg" size="md">
       <Group justify="center" gap={32}>
+        <Anchor component={Link} to="/pricing" color="dimmed" size="sm">
+          Pricing
+        </Anchor>
         <Anchor component={Link} to="/terms" color="dimmed" size="sm">
           Terms
         </Anchor>
