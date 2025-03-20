@@ -6,6 +6,7 @@ interface User {
   uid: string;
   email: string;
   displayName: string;
+  photoURL?: string | null;
 }
 
 // Authentication state interface
@@ -18,6 +19,7 @@ interface AuthState {
   
   // Authentication methods
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -64,6 +66,41 @@ const useAuth = create<AuthState>()(
           
         } catch (error) {
           console.error('Login error:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'An unknown error occurred',
+            isLoading: false,
+          });
+        }
+      },
+
+      // Google login method
+      googleLogin: async (idToken: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          const response = await fetch(`${API_URL}/api/auth/google-login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ idToken }),
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Failed to login with Google');
+          }
+          
+          set({ 
+            user: data.user,
+            token: data.token,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          
+        } catch (error) {
+          console.error('Google login error:', error);
           set({ 
             error: error instanceof Error ? error.message : 'An unknown error occurred',
             isLoading: false,
@@ -138,11 +175,16 @@ const useAuth = create<AuthState>()(
         }
       },
 
-      // Clear error
-      clearError: () => set({ error: null }),
+      // Clear error - make this stable to avoid re-renders
+      clearError: () => {
+        const currentError = get().error;
+        if (currentError !== null) {
+          set({ error: null });
+        }
+      },
     }),
     {
-      name: 'artify-auth-storage', // Name for localStorage
+      name: 'artify-auth-storage',
       partialize: (state) => ({ 
         user: state.user,
         token: state.token,

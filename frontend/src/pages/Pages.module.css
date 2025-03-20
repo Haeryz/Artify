@@ -1,0 +1,8 @@
+.contentPaper {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  color: light-dark(var(--mantine-color-dark-8), var(--mantine-color-gray-0));
+  box-shadow: light-dark(
+    var(--mantine-shadow-sm),
+    0 0 0 1px rgba(255, 255, 255, 0.05)
+  );
+}

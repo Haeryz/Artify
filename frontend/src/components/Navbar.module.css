@@ -1,0 +1,50 @@
+.header {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.logo {
+  text-decoration: none;
+  color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-white));
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.navLink {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-3));
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.activeLink {
+  color: var(--mantine-color-primary-filled);
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: light-dark(
+    rgba(var(--mantine-color-primary-light-rgb), 0.1),
+    rgba(var(--mantine-color-primary-dark-rgb), 0.2)
+  );
+}
+
+.navLink:hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  color: light-dark(var(--mantine-color-dark-6), var(--mantine-color-gray-0));
+}
+
+.main {
+  background-color: var(--content-background);
+  color: var(--content-text);
+  min-height: calc(100vh - 60px);
+  margin-top: 60px;
+  padding: 0;
+}
