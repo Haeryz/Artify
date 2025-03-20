@@ -10,14 +10,14 @@ const Refunds = () => {
       <Space h="md" />
 
       <Text fw={700}>
-        This Refund Policy is issued by Haeriz Razafy, operating as "Artify" (sole proprietor).
+        This Refund Policy is issued by Hariz Faizul, operating as "Artify" (sole proprietor).
       </Text>
       <Space h="sm" />
       
       <Text>
         This Refund Policy outlines the guidelines for refunds and cancellations
         for services purchased through the Artify platform, an AI-powered photo
-        editing service provided by Haeriz Razafy (Artify).
+        editing service provided by Hariz Faizul (Artify).
       </Text>
 
       <Space h="md" />
@@ -169,10 +169,10 @@ const Refunds = () => {
         For questions or assistance with this Refund Policy, please reach out
         to:
       </Text>
-      <Text>Business Name: Artify (owned by Haeriz Razafy)</Text>
+      <Text>Business Name: Artify (owned by Hariz Faizul)</Text>
       <Text>Email: haeriz42069@gmail.com</Text>
       <Text>Address: 123 Main Street, Jakarta, Indonesia 12345</Text>
-      <Text>Phone: +62 812-3456-7890</Text>
+      <Text>Phone: +62 877-5570-4083</Text>
 
       <Space h="xl" />
       <NavigationFooter />

@@ -88,7 +88,7 @@ export function Pricing() {
           <Box>
             <Title ta="center" order={1}>Artify AI Photo Editing Pricing</Title>
             <Text ta="center" fw={700} mt="md">
-              Owned and operated by Haeriz Razafy, Sole Proprietor
+              Owned and operated by Hariz Faizul, Sole Proprietor
             </Text>
             <Text ta="center" c="dimmed" size="lg" mt="sm">
               Choose the perfect AI-powered photo editing plan for your creative needs
@@ -304,7 +304,7 @@ export function Pricing() {
             <Title order={4}>Need an Enterprise Solution?</Title>
             <Text>
               Our enterprise plans offer advanced features, custom integrations, dedicated support,
-              and volume pricing for teams of all sizes. Contact Haeriz Razafy directly for enterprise pricing.
+              and volume pricing for teams of all sizes. Contact Hariz Faizul directly for enterprise pricing.
             </Text>
             <Button variant="outline" color="dark" mt="md">
               Contact Sales

@@ -198,7 +198,7 @@ const Terms = () => {
       <Text>Business Name: Artify (owned by Hariz Faizul)</Text>
       <Text>Email: haeriz42069@gmail.com</Text>
       <Text>Address: 123 Main Street, Jakarta, Indonesia 12345</Text>
-      <Text>Phone: +62 812-3456-7890</Text>
+      <Text>Phone: +62 877-5570-4083</Text>
 
       <Space h="xl" />
       <NavigationFooter />
