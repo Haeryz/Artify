@@ -1,4 +1,5 @@
 import { Box, Container, Title, Text, Space, Divider } from "@mantine/core";
+import NavigationFooter from "../components/NavigationFooter";
 
 const Privacy = () => {
   return (
@@ -273,6 +274,9 @@ const Privacy = () => {
         under these laws, contact us at privacy@artify-app.com
         (mailto:privacy@artify-app.com).
       </Text>
+      
+      <Space h="xl" />
+      <NavigationFooter />
     </Container>
   );
 };

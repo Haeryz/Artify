@@ -24,6 +24,7 @@ import {
   PasswordMismatchNotification,
   AccountCreatedNotification
 } from '../components/Notifications'
+import NavigationFooter from "../components/NavigationFooter";
 
 const Authentication = () => {
   const [activeTab, setActiveTab] = useState<string | null>('login');
@@ -176,145 +177,148 @@ const Authentication = () => {
   }, [logout]);
 
   return (
-    <Center style={{ height: '100vh' }}>
-      <Card shadow="sm" padding="lg" radius="md" withBorder style={{ maxWidth: 500, width: '100%', position: 'relative' }}>
-        <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} />
-        <Group justify="space-between" align="center">
-          <Title order={2} ta="center" mt="md" mb="md">Welcome to Artify</Title>
-          
-          {isAuthenticated && (
-            <Button 
-              color="red" 
-              variant="light" 
-              onClick={handleLogout}
-              size="sm"
-            >
-              Logout
-            </Button>
-          )}
-        </Group>
-        
-        {notification}
-        
-        {!isAuthenticated ? (
-          <Tabs value={activeTab} onChange={setActiveTab}>
-            <Tabs.List grow>
-              <Tabs.Tab value="login">Login</Tabs.Tab>
-              <Tabs.Tab value="register">Register</Tabs.Tab>
-            </Tabs.List>
-
-            <Tabs.Panel value="login">
-              <Box mt="md">
-                <form onSubmit={loginForm.onSubmit(handleLogin)}>
-                  <Stack>
-                    <TextInput
-                      label="Email"
-                      placeholder="your.email@example.com"
-                      required
-                      {...loginForm.getInputProps('email')}
-                    />
-                    
-                    <PasswordInput
-                      label="Password"
-                      placeholder="Your password"
-                      required
-                      {...loginForm.getInputProps('password')}
-                    />
-                    
-                    <Button fullWidth mt="md" type="submit">
-                      Login
-                    </Button>
-                    
-                    <Button 
-                      fullWidth 
-                      variant="default" 
-                      leftSection={googleIconSvg}
-                      type="button"
-                      onClick={handleGoogleLogin}
-                    >
-                      Continue with Google
-                    </Button>
-                    
-                    <Divider my="sm" label="Don't have an account?" labelPosition="center" />
-                    
-                    <Button 
-                      variant="subtle" 
-                      onClick={() => setActiveTab('register')}
-                    >
-                      Create Account
-                    </Button>
-                  </Stack>
-                </form>
-              </Box>
-            </Tabs.Panel>
+    <>
+      <Center style={{ minHeight: '90vh' }}>
+        <Card shadow="sm" padding="lg" radius="md" withBorder style={{ maxWidth: 500, width: '100%', position: 'relative' }}>
+          <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} />
+          <Group justify="space-between" align="center">
+            <Title order={2} ta="center" mt="md" mb="md">Welcome to Artify</Title>
             
-            <Tabs.Panel value="register">
-              <Box mt="md">
-                <form onSubmit={registerForm.onSubmit(handleRegister)}>
-                  <Stack>
-                    <TextInput
-                      label="Display Name"
-                      placeholder="Your name"
-                      required
-                      {...registerForm.getInputProps('displayName')}
-                    />
-                    
-                    <TextInput
-                      label="Email"
-                      placeholder="your.email@example.com"
-                      required
-                      {...registerForm.getInputProps('email')}
-                    />
-                    
-                    <PasswordInput
-                      label="Password"
-                      placeholder="Create a password"
-                      required
-                      {...registerForm.getInputProps('password')}
-                    />
-                    
-                    <PasswordInput
-                      label="Confirm Password"
-                      placeholder="Confirm your password"
-                      required
-                      {...registerForm.getInputProps('confirmPassword')}
-                    />
-                    
-                    <Button fullWidth mt="md" type="submit">
-                      Register
-                    </Button>
-                    
-                    <Divider my="sm" label="Already have an account?" labelPosition="center" />
-                    
-                    <Button 
-                      variant="subtle" 
-                      onClick={() => setActiveTab('login')}
-                    >
-                      Login to your account
-                    </Button>
-                  </Stack>
-                </form>
-              </Box>
-            </Tabs.Panel>
-          </Tabs>
-        ) : (
-          <Box py="md">
-            <SuccessNotification
-              title="Authentication Successful"
-              message={`Welcome back, ${user?.displayName || 'User'}! You are now logged in.`}
-            />
-            <Button 
-              fullWidth 
-              mt="md" 
-              color="red" 
-              onClick={handleLogout}
-            >
-              Logout
-            </Button>
-          </Box>
-        )}
-      </Card>
-    </Center>
+            {isAuthenticated && (
+              <Button 
+                color="red" 
+                variant="light" 
+                onClick={handleLogout}
+                size="sm"
+              >
+                Logout
+              </Button>
+            )}
+          </Group>
+          
+          {notification}
+          
+          {!isAuthenticated ? (
+            <Tabs value={activeTab} onChange={setActiveTab}>
+              <Tabs.List grow>
+                <Tabs.Tab value="login">Login</Tabs.Tab>
+                <Tabs.Tab value="register">Register</Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="login">
+                <Box mt="md">
+                  <form onSubmit={loginForm.onSubmit(handleLogin)}>
+                    <Stack>
+                      <TextInput
+                        label="Email"
+                        placeholder="your.email@example.com"
+                        required
+                        {...loginForm.getInputProps('email')}
+                      />
+                      
+                      <PasswordInput
+                        label="Password"
+                        placeholder="Your password"
+                        required
+                        {...loginForm.getInputProps('password')}
+                      />
+                      
+                      <Button fullWidth mt="md" type="submit">
+                        Login
+                      </Button>
+                      
+                      <Button 
+                        fullWidth 
+                        variant="default" 
+                        leftSection={googleIconSvg}
+                        type="button"
+                        onClick={handleGoogleLogin}
+                      >
+                        Continue with Google
+                      </Button>
+                      
+                      <Divider my="sm" label="Don't have an account?" labelPosition="center" />
+                      
+                      <Button 
+                        variant="subtle" 
+                        onClick={() => setActiveTab('register')}
+                      >
+                        Create Account
+                      </Button>
+                    </Stack>
+                  </form>
+                </Box>
+              </Tabs.Panel>
+              
+              <Tabs.Panel value="register">
+                <Box mt="md">
+                  <form onSubmit={registerForm.onSubmit(handleRegister)}>
+                    <Stack>
+                      <TextInput
+                        label="Display Name"
+                        placeholder="Your name"
+                        required
+                        {...registerForm.getInputProps('displayName')}
+                      />
+                      
+                      <TextInput
+                        label="Email"
+                        placeholder="your.email@example.com"
+                        required
+                        {...registerForm.getInputProps('email')}
+                      />
+                      
+                      <PasswordInput
+                        label="Password"
+                        placeholder="Create a password"
+                        required
+                        {...registerForm.getInputProps('password')}
+                      />
+                      
+                      <PasswordInput
+                        label="Confirm Password"
+                        placeholder="Confirm your password"
+                        required
+                        {...registerForm.getInputProps('confirmPassword')}
+                      />
+                      
+                      <Button fullWidth mt="md" type="submit">
+                        Register
+                      </Button>
+                      
+                      <Divider my="sm" label="Already have an account?" labelPosition="center" />
+                      
+                      <Button 
+                        variant="subtle" 
+                        onClick={() => setActiveTab('login')}
+                      >
+                        Login to your account
+                      </Button>
+                    </Stack>
+                  </form>
+                </Box>
+              </Tabs.Panel>
+            </Tabs>
+          ) : (
+            <Box py="md">
+              <SuccessNotification
+                title="Authentication Successful"
+                message={`Welcome back, ${user?.displayName || 'User'}! You are now logged in.`}
+              />
+              <Button 
+                fullWidth 
+                mt="md" 
+                color="red" 
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </Box>
+          )}
+        </Card>
+      </Center>
+      <NavigationFooter />
+    </>
   )
 }
 

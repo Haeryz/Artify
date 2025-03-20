@@ -1,4 +1,5 @@
 import { Container, Title, Text, Space, Divider } from "@mantine/core";
+import NavigationFooter from "../components/NavigationFooter";
 
 const Terms = () => {
   return (
@@ -167,6 +168,9 @@ const Terms = () => {
         If you have any questions about these Terms, please contact us at:
       </Text>
       <Text>Email: haeriz42069@gmail.com</Text>
+
+      <Space h="xl" />
+      <NavigationFooter />
     </Container>
   );
 };
