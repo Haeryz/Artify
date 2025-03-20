@@ -1,7 +1,8 @@
 import express from 'express';
 import { 
   signup, 
-  login, 
+  login,
+  googleLogin, 
   logout, 
   getCurrentUser, 
   updateUserProfile,
@@ -20,6 +21,7 @@ router.use(ipBlocklistMiddleware);
 // Public routes (no auth required)
 router.post('/signup', passwordStrengthMiddleware, signup);
 router.post('/login', login);
+router.post('/google-login', googleLogin); // Add Google login route
 router.post('/logout', logout);
 
 // Protected routes (auth required)

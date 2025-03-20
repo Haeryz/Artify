@@ -4,7 +4,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  updatePassword
+  updatePassword,
+  GoogleAuthProvider,
+  signInWithCredential
 } from 'firebase/auth';
 import { 
   doc, 
@@ -179,6 +181,97 @@ const login = async (req, res) => {
       errorMessage = 'Invalid email or password';
     } else if (error.code === 'auth/too-many-requests') {
       errorMessage = 'Too many failed login attempts. Try again later';
+    }
+    
+    res.status(401).json({ message: errorMessage });
+  }
+};
+
+// Google login
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const ipAddress = req.clientIp || req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    if (!idToken) {
+      return res.status(400).json({ message: 'Google ID token is required' });
+    }
+
+    // Create a credential from the Google ID token
+    const credential = GoogleAuthProvider.credential(idToken);
+    
+    // Sign in with credential
+    const userCredential = await signInWithCredential(auth, credential);
+    const firebaseUser = userCredential.user;
+
+    // Get user from Firestore
+    const userDocRef = doc(db, USERS_COLLECTION, firebaseUser.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    // Update or create user data
+    if (userDoc.exists()) {
+      // Update last login time and security info
+      await updateDoc(userDocRef, {
+        lastLogin: serverTimestamp(),
+        'securityInfo.lastLoginIp': ipAddress,
+        'securityInfo.lastLoginUserAgent': userAgent,
+        'securityInfo.lastLoginTime': serverTimestamp(),
+        'securityInfo.loginCount': (userDoc.data().securityInfo?.loginCount || 0) + 1
+      });
+    } else {
+      // Create user in Firestore if this is their first login
+      await setDoc(userDocRef, {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || 'Google User',
+        photoURL: firebaseUser.photoURL || null,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        provider: 'google',
+        securityInfo: {
+          lastLoginIp: ipAddress,
+          lastLoginUserAgent: userAgent,
+          lastLoginTime: serverTimestamp(),
+          loginCount: 1,
+          accountCreationIp: ipAddress,
+          accountCreationUserAgent: userAgent
+        }
+      });
+    }
+
+    // Get ID token
+    const token = await firebaseUser.getIdToken();
+    
+    // Create user session with device info
+    await createSession(firebaseUser.uid, token, ipAddress, userAgent);
+    
+    // Get user data to return
+    const userData = userDoc.exists() ? userDoc.data() : {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName || 'Google User',
+      photoURL: firebaseUser.photoURL
+    };
+    
+    // Return user data and token
+    res.status(200).json({ 
+      message: 'Google login successful',
+      token,
+      expiresIn: 24 * 60 * 60, // 24 hours in seconds
+      user: {
+        uid: userData.uid,
+        email: userData.email,
+        displayName: userData.displayName,
+        photoURL: userData.photoURL || null
+      }
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    
+    let errorMessage = 'Failed to authenticate with Google';
+    if (error.code === 'auth/invalid-credential') {
+      errorMessage = 'Invalid Google credential';
     }
     
     res.status(401).json({ message: errorMessage });
@@ -360,7 +453,8 @@ const changePassword = async (req, res) => {
 
 export { 
   signup, 
-  login, 
+  login,
+  googleLogin, 
   logout, 
   getCurrentUser, 
   updateUserProfile, 
