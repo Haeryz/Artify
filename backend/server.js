@@ -5,6 +5,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet'; // Add helmet for security headers
 import authRoutes from './routes/authentication.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import promptRoutes from './routes/prompt.routes.js'; // Import prompt routes
 import { authMiddleware } from './middleware/auth.middleware.js';
 import { sessionMiddleware } from './middleware/session.middleware.js';
 import { ipBlocklistMiddleware } from './middleware/security.middleware.js';
@@ -51,6 +53,8 @@ app.use('/health', healthLimiter); // Apply separate limiter for health checks
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/prompts', promptRoutes); // Add prompt routes
 
 // Basic route
 app.get('/', (req, res) => {

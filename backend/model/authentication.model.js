@@ -11,6 +11,13 @@ const userModel = {
   displayName: String,
   createdAt: Date,
   lastLogin: Date,
+  // Prompt usage tracking
+  promptUsage: {
+    count: Number,       // Total number of prompts used
+    dailyCount: Number,  // Daily usage count
+    lastUsed: Date,      // Last time a prompt was used
+    dailyReset: Date     // When the daily count was last reset
+  },
   // Add any other fields you want to store in Firestore
 };
 
