@@ -12,12 +12,17 @@ import {
   Modal,
   Textarea,
   FileInput,
-  Paper
+  Paper,
+  Loader,
+  Notification,
+  Progress,
+  Box
 } from "@mantine/core";
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useInterval } from '@mantine/hooks';
 import { FaPlus, FaRobot, FaUpload, FaSearch, FaImage } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import usePromptStore from "../hooks/prompt";
 
 // Mock data for demonstration
 const mockProjects = [
@@ -66,18 +71,98 @@ const Home = () => {
   const [aiPrompt, setAiPrompt] = useState("");
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
+  // Prompt store state and actions
+  const { 
+    generateImage, 
+    getPrompt, 
+    loading, 
+    error, 
+    clearError,
+    getPromptUsage,
+    usageStats
+  } = usePromptStore();
+
+  // Local state for tracking generation
+  const [generatingPromptId, setGeneratingPromptId] = useState<string | null>(null);
+  const [generationSuccess, setGenerationSuccess] = useState(false);
+
+  // Polling for prompt status when generating
+  const interval = useInterval(() => {
+    if (generatingPromptId) {
+      checkPromptStatus(generatingPromptId);
+    }
+  }, 2000);
+
+  // Start polling when we have a promptId
+  useEffect(() => {
+    if (generatingPromptId) {
+      interval.start();
+      return interval.stop;
+    }
+  }, [generatingPromptId, interval]);
+
+  // Load usage stats when component mounts
+  useEffect(() => {
+    getPromptUsage().catch(console.error);
+  }, [getPromptUsage]);
+
+  // Check the status of a generating prompt
+  const checkPromptStatus = async (promptId: string) => {
+    try {
+      const prompt = await getPrompt(promptId);
+      
+      if (prompt.status === 'completed') {
+        // Generation finished successfully
+        setGenerationSuccess(true);
+        setGeneratingPromptId(null);
+        interval.stop();
+        
+        // If image was generated successfully and we're in the modal, close it
+        if (prompt.imageUrl && aiModalOpened) {
+          closeAiModal();
+          
+          // Navigate to the image or show it
+          // For now, let's just show a success notification
+          console.log("Image generated:", prompt.imageUrl);
+        }
+      } else if (prompt.status === 'failed') {
+        // Generation failed
+        setGeneratingPromptId(null);
+        interval.stop();
+      }
+    } catch (error) {
+      console.error("Error checking prompt status:", error);
+    }
+  };
+
   // Filter projects based on search term
   const filteredProjects = mockProjects.filter(project => 
     project.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   // Handle AI generation
-  const handleGenerateAI = () => {
-    // This would connect to your AI generation service
-    console.log("Generating with prompt:", aiPrompt);
-    // Close modal after submission
-    closeAiModal();
-    setAiPrompt("");
+  const handleGenerateAI = async () => {
+    if (!aiPrompt.trim()) return;
+    
+    try {
+      // Clear any previous success
+      setGenerationSuccess(false);
+      
+      // Call API to generate image
+      const promptId = await generateImage(aiPrompt);
+      
+      // Store the promptId for status polling
+      setGeneratingPromptId(promptId);
+      
+      // Optionally close modal if we want to show progress elsewhere
+      // closeAiModal(); 
+      
+      // Clear the prompt text
+      setAiPrompt("");
+    } catch (error) {
+      console.error("Error generating image:", error);
+      // Error is already set in the store
+    }
   };
   
   // Handle file import
@@ -102,8 +187,51 @@ const Home = () => {
     navigate(`/canvas/${projectId}`);
   };
 
+  // Render usage limit information
+  const renderUsageLimits = () => {
+    if (!usageStats) return null;
+    
+    return (
+      <Box mb="md">
+        <Text size="sm" fw={500}>Image Generation Limits</Text>
+        <Progress 
+          value={(usageStats.dailyCount / usageStats.dailyLimit) * 100} 
+          size="sm" 
+          mt={5}
+        />
+        <Text size="xs" c="dimmed" mt={5}>
+          {usageStats.dailyCount} of {usageStats.dailyLimit} daily generations used
+        </Text>
+      </Box>
+    );
+  };
+
   return (
     <Container size="xl" py="xl">
+      {/* Error Notification */}
+      {error && (
+        <Notification 
+          title="Error" 
+          color="red" 
+          onClose={clearError}
+          mb="md"
+        >
+          {error}
+        </Notification>
+      )}
+
+      {/* Success Notification */}
+      {generationSuccess && (
+        <Notification 
+          title="Success" 
+          color="green" 
+          onClose={() => setGenerationSuccess(false)}
+          mb="md"
+        >
+          Your image has been generated successfully! Check your gallery to view it.
+        </Notification>
+      )}
+
       {/* AI Generation Modal */}
       <Modal 
         opened={aiModalOpened} 
@@ -114,21 +242,34 @@ const Home = () => {
       >
         <Stack>
           <Text size="sm">Describe what you want to create and our AI will generate it for you.</Text>
+          
+          {renderUsageLimits()}
+          
           <Textarea
             placeholder="e.g. Create a minimalist logo for a coffee shop with mountains in the background"
             minRows={4}
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.currentTarget.value)}
             required
+            disabled={loading || !!generatingPromptId}
           />
+          
+          {generatingPromptId && (
+            <Group>
+              <Loader size="sm" />
+              <Text size="sm">Generating your image... This may take a moment.</Text>
+            </Group>
+          )}
+          
           <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={closeAiModal}>Cancel</Button>
+            <Button variant="subtle" onClick={closeAiModal} disabled={loading}>Cancel</Button>
             <Button 
               onClick={handleGenerateAI} 
-              disabled={!aiPrompt.trim()}
-              leftSection={<FaRobot size={16} />}
+              disabled={!aiPrompt.trim() || loading || !!generatingPromptId}
+              leftSection={loading ? <Loader size="xs" color="white" /> : <FaRobot size={16} />}
+              loading={loading || !!generatingPromptId}
             >
-              Generate
+              {loading || generatingPromptId ? 'Generating...' : 'Generate'}
             </Button>
           </Group>
         </Stack>

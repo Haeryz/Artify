@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AppShell } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
@@ -11,6 +11,7 @@ import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Home from './pages/Home'
 import Canvas from './pages/Canvas'
+import useAuthStore from './hooks/auth'
 
 // Get the base URL for the router (useful for subdirectory deployments)
 const getBasename = () => {
@@ -22,6 +23,14 @@ const getBasename = () => {
 const App = memo(function App() {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
+  const { getCurrentUser, token } = useAuthStore();
+  
+  // Load user data when the app initializes if token exists
+  useEffect(() => {
+    if (token) {
+      getCurrentUser();
+    }
+  }, [getCurrentUser, token]);
 
   const AppContent = () => (
     <AppShell
