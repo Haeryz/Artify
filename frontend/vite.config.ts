@@ -15,5 +15,37 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.VITE_API_URL': JSON.stringify('https://artify-huf7baefeeceafff.southeastasia-01.azurewebsites.net')
+  },
+  build: {
+    // Increase the warning limit to avoid unnecessary warnings
+    chunkSizeWarningLimit: 800,
+    
+    // Configure output chunking to optimize bundle size
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor libraries (node_modules) into separate chunks
+          vendor: [
+            'react', 
+            'react-dom', 
+            'react-router-dom',
+            '@mantine/core',
+            '@mantine/hooks'
+          ],
+          // UI libraries and icons
+          ui: [
+            'react-icons'
+          ],
+          // State management
+          state: [
+            'zustand'
+          ],
+          // HTTP client
+          http: [
+            'axios'
+          ]
+        }
+      }
+    }
   }
 })
