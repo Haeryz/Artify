@@ -4,9 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  updatePassword,
-  GoogleAuthProvider,
-  signInWithCredential
+  updatePassword
 } from 'firebase/auth';
 import { 
   doc, 
@@ -202,73 +200,96 @@ const googleLogin = async (req, res) => {
     const ipAddress = req.clientIp || req.ip || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
 
-    // Verify the Firebase ID token
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-    
-    // Get user from Firebase Auth
-    const firebaseUser = await admin.auth().getUser(uid);
+    try {
+      // Check if Firebase Admin is initialized
+      if (admin.apps.length === 0) {
+        return res.status(500).json({ message: 'Firebase Admin SDK not initialized' });
+      }
 
-    // Get user from Firestore
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
-    const userDoc = await getDoc(userDocRef);
-    
-    // Update or create user data
-    if (userDoc.exists()) {
-      // Update last login time and security info
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-        'securityInfo.lastLoginIp': ipAddress,
-        'securityInfo.lastLoginUserAgent': userAgent,
-        'securityInfo.lastLoginTime': serverTimestamp(),
-        'securityInfo.loginCount': (userDoc.data().securityInfo?.loginCount || 0) + 1
-      });
-    } else {
-      // Create user in Firestore if this is their first login
-      const safeDisplayName = sanitizeInput(firebaseUser.displayName) || 'Google User';
+      // Verify the ID token directly with Firebase Admin SDK
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
       
-      await setDoc(userDocRef, {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: safeDisplayName,
-        photoURL: firebaseUser.photoURL || null,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
-        provider: 'google',
-        securityInfo: {
-          lastLoginIp: ipAddress,
-          lastLoginUserAgent: userAgent,
-          lastLoginTime: serverTimestamp(),
-          loginCount: 1,
-          accountCreationIp: ipAddress,
-          accountCreationUserAgent: userAgent
+      // Get user information from the decoded token
+      const uid = decodedToken.uid;
+      const email = decodedToken.email;
+      const name = decodedToken.name;
+      const picture = decodedToken.picture;
+      
+      // Log successful token verification
+      console.log(`Successfully verified token for user: ${uid}`);
+
+      // Get additional user info from Firebase Auth
+      const firebaseUser = await admin.auth().getUser(uid);
+
+      // Check if user exists in Firestore
+      const userDocRef = doc(db, USERS_COLLECTION, uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        // Update existing user's data
+        await updateDoc(userDocRef, {
+          lastLogin: serverTimestamp(),
+          photoURL: picture || userDoc.data().photoURL || null,
+          'securityInfo.lastLoginIp': ipAddress,
+          'securityInfo.lastLoginUserAgent': userAgent,
+          'securityInfo.lastLoginTime': serverTimestamp(),
+          'securityInfo.loginCount': (userDoc.data().securityInfo?.loginCount || 0) + 1
+        });
+      } else {
+        // Create new user in Firestore
+        const safeDisplayName = sanitizeInput(name) || email.split('@')[0] || 'Google User';
+        
+        await setDoc(userDocRef, {
+          uid: uid,
+          email: email,
+          displayName: safeDisplayName,
+          photoURL: picture || null,
+          createdAt: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          provider: 'google',
+          securityInfo: {
+            lastLoginIp: ipAddress,
+            lastLoginUserAgent: userAgent,
+            lastLoginTime: serverTimestamp(),
+            loginCount: 1,
+            accountCreationIp: ipAddress,
+            accountCreationUserAgent: userAgent
+          }
+        });
+      }
+
+      // Create session
+      await createSession(uid, idToken, ipAddress, userAgent);
+      
+      // Get user data to return
+      const userData = userDoc.exists() ? userDoc.data() : {
+        uid: uid,
+        email: email,
+        displayName: sanitizeInput(name) || email.split('@')[0] || 'Google User',
+        photoURL: picture || null
+      };
+      
+      // Return user data and token
+      res.status(200).json({ 
+        message: 'Google login successful',
+        token: idToken,
+        expiresIn: 3600, // 1 hour in seconds
+        user: {
+          uid: userData.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          photoURL: userData.photoURL || null
         }
       });
+      
+    } catch (verificationError) {
+      console.error('ID token verification error:', verificationError);
+      
+      return res.status(401).json({ 
+        message: 'Invalid authentication token',
+        detail: verificationError.code || 'Token verification failed'
+      });
     }
-
-    // Create user session with device info
-    await createSession(uid, idToken, ipAddress, userAgent);
-    
-    // Get user data to return
-    const userData = userDoc.exists() ? userDoc.data() : {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: sanitizeInput(firebaseUser.displayName) || 'Google User',
-      photoURL: firebaseUser.photoURL
-    };
-    
-    // Return user data and token
-    res.status(200).json({ 
-      message: 'Google login successful',
-      token: idToken,
-      expiresIn: 24 * 60 * 60, // 24 hours in seconds
-      user: {
-        uid: userData.uid,
-        email: userData.email,
-        displayName: userData.displayName,
-        photoURL: userData.photoURL || null
-      }
-    });
   } catch (error) {
     console.error('Google login error:', error);
     
