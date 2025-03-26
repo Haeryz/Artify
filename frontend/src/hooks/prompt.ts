@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import axios, { AxiosError } from 'axios';
+import useAuth from './Authentication';
+
+// API base URL
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 interface PromptState {
   // State
@@ -52,6 +56,18 @@ interface ApiErrorResponse {
   code?: string;
 }
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const { token } = useAuth.getState();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
+
 const usePromptStore = create<PromptState>((set) => ({
   // Initial state
   prompts: [],
@@ -65,21 +81,25 @@ const usePromptStore = create<PromptState>((set) => ({
     try {
       set({ loading: true, error: null });
       
+      // Get authentication token
+      const headers = getAuthHeaders();
+      
       const response = await axios.post<{
         message: string;
         promptId: string;
         dailyCount: number;
         dailyLimit: number;
-      }>('/api/prompts/generate', {
+      }>(`${API_URL}/api/prompts/generate`, {
         prompt: promptText,
         config
-      });
+      }, { headers });
       
       // Return the promptId for tracking
       return response.data.promptId;
     } catch (error) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to generate image';
+      const errorMessage = axiosError.response?.data?.message || 
+                          (error instanceof Error ? error.message : 'Failed to generate image');
       set({ error: errorMessage });
       throw new Error(errorMessage);
     } finally {
@@ -92,14 +112,18 @@ const usePromptStore = create<PromptState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      const response = await axios.get<Prompt>(`/api/prompts/${promptId}`);
+      // Get authentication token
+      const headers = getAuthHeaders();
+      
+      const response = await axios.get<Prompt>(`${API_URL}/api/prompts/${promptId}`, { headers });
       const prompt = response.data;
       
       set({ currentPrompt: prompt });
       return prompt;
     } catch (error) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to get prompt';
+      const errorMessage = axiosError.response?.data?.message || 
+                          (error instanceof Error ? error.message : 'Failed to get prompt');
       set({ error: errorMessage });
       throw new Error(errorMessage);
     } finally {
@@ -112,14 +136,18 @@ const usePromptStore = create<PromptState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      const response = await axios.get<{ prompts: Prompt[] }>('/api/prompts');
+      // Get authentication token
+      const headers = getAuthHeaders();
+      
+      const response = await axios.get<{ prompts: Prompt[] }>(`${API_URL}/api/prompts`, { headers });
       const { prompts } = response.data;
       
       set({ prompts });
       return prompts;
     } catch (error) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to get prompts';
+      const errorMessage = axiosError.response?.data?.message || 
+                          (error instanceof Error ? error.message : 'Failed to get prompts');
       set({ error: errorMessage });
       throw new Error(errorMessage);
     } finally {
@@ -132,14 +160,18 @@ const usePromptStore = create<PromptState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      const response = await axios.get<PromptUsageStats>('/api/prompts/usage/stats');
+      // Get authentication token
+      const headers = getAuthHeaders();
+      
+      const response = await axios.get<PromptUsageStats>(`${API_URL}/api/prompts/usage/stats`, { headers });
       const usageStats = response.data;
       
       set({ usageStats });
       return usageStats;
     } catch (error) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to get prompt usage';
+      const errorMessage = axiosError.response?.data?.message || 
+                          (error instanceof Error ? error.message : 'Failed to get prompt usage');
       set({ error: errorMessage });
       throw new Error(errorMessage);
     } finally {
