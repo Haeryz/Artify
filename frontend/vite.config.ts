@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'https://artify-huf7baefeeceafff.southeastasia-01.azurewebsites.net',
+        // target: 'http://localhost:5000',
         changeOrigin: true,
         secure: true,
       }
@@ -15,6 +16,7 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.VITE_API_URL': JSON.stringify('https://artify-huf7baefeeceafff.southeastasia-01.azurewebsites.net')
+    // 'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:5000')
   },
   build: {
     // Increase the warning limit to avoid unnecessary warnings
