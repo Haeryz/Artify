@@ -132,11 +132,48 @@ export const validateSession = async (userId, ipAddress = null) => {
   }
 };
 
-// Placeholder for token encryption (implement with a proper encryption library)
+// Implement proper token encryption using crypto-js
 const encryptToken = async (token) => {
-  // In production, use a proper encryption method
-  // For now, just return the token
-  return token;
+  try {
+    // In a production environment, use environment variables for the secret key
+    const secretKey = process.env.TOKEN_ENCRYPTION_SECRET || 'your-fallback-secret-key-change-in-production';
+    
+    // Import crypto-js components
+    const CryptoJS = await import('crypto-js');
+    
+    // Encrypt the token
+    const encrypted = CryptoJS.AES.encrypt(token, secretKey).toString();
+    
+    return encrypted;
+  } catch (error) {
+    console.error('Error encrypting token:', error);
+    // Fall back to the unencrypted token if encryption fails
+    return token;
+  }
+};
+
+/**
+ * Decrypts a token that was encrypted with encryptToken
+ * @param {string} encryptedToken - The encrypted token
+ * @returns {string} - The decrypted token
+ */
+const decryptToken = async (encryptedToken) => {
+  try {
+    // Use the same secret key as for encryption
+    const secretKey = process.env.TOKEN_ENCRYPTION_SECRET || 'your-fallback-secret-key-change-in-production';
+    
+    // Import crypto-js components
+    const CryptoJS = await import('crypto-js');
+    
+    // Decrypt the token
+    const decrypted = CryptoJS.AES.decrypt(encryptedToken, secretKey).toString(CryptoJS.enc.Utf8);
+    
+    return decrypted;
+  } catch (error) {
+    console.error('Error decrypting token:', error);
+    // Return null if decryption fails
+    return null;
+  }
 };
 
 /**
