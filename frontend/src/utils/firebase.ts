@@ -24,7 +24,6 @@ googleProvider.setCustomParameters({
 });
 
 // Function to trigger Google sign-in popup and get ID token
-// The actual authentication is handled by the backend
 export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
