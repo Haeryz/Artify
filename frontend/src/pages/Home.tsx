@@ -19,10 +19,11 @@ import {
   Box
 } from "@mantine/core";
 import { useDisclosure, useInterval } from '@mantine/hooks';
-import { FaPlus, FaRobot, FaUpload, FaSearch, FaImage } from "react-icons/fa";
+import { FaPlus, FaRobot, FaUpload, FaSearch, FaImage, FaSignInAlt } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import usePromptStore from "../hooks/prompt";
+import useAuth from "../hooks/Authentication";
 
 // Mock data for demonstration
 const mockProjects = [
@@ -62,10 +63,12 @@ const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter] = useState("recent"); // Could be expanded with more filter options
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   
   // Modal states
   const [aiModalOpened, { open: openAiModal, close: closeAiModal }] = useDisclosure(false);
   const [importModalOpened, { open: openImportModal, close: closeImportModal }] = useDisclosure(false);
+  const [authModalOpened, { open: openAuthModal, close: closeAuthModal }] = useDisclosure(false);
   
   // Form states
   const [aiPrompt, setAiPrompt] = useState("");
@@ -85,6 +88,7 @@ const Home = () => {
   // Local state for tracking generation
   const [generatingPromptId, setGeneratingPromptId] = useState<string | null>(null);
   const [generationSuccess, setGenerationSuccess] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
   // Polling for prompt status when generating
   const interval = useInterval(() => {
@@ -101,10 +105,15 @@ const Home = () => {
     }
   }, [generatingPromptId, interval]);
 
-  // Load usage stats when component mounts
+  // Load usage stats when component mounts and user is authenticated
   useEffect(() => {
-    getPromptUsage().catch(console.error);
-  }, [getPromptUsage]);
+    if (isAuthenticated) {
+      getPromptUsage().catch(error => {
+        console.error("Error fetching prompt usage:", error);
+        // Handle gracefully - don't show errors for this particular call
+      });
+    }
+  }, [isAuthenticated, getPromptUsage]);
 
   // Check the status of a generating prompt
   const checkPromptStatus = async (promptId: string) => {
@@ -144,6 +153,11 @@ const Home = () => {
   const handleGenerateAI = async () => {
     if (!aiPrompt.trim()) return;
     
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    
     try {
       // Clear any previous success
       setGenerationSuccess(false);
@@ -162,11 +176,21 @@ const Home = () => {
     } catch (error) {
       console.error("Error generating image:", error);
       // Error is already set in the store
+      
+      // Check for auth errors specifically
+      if (error instanceof Error && error.message.includes('Authentication required')) {
+        openAuthModal();
+      }
     }
   };
   
   // Handle file import
   const handleImportFile = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    
     if (importedFile) {
       console.log("Importing file:", importedFile.name);
       // Process the file here
@@ -177,6 +201,11 @@ const Home = () => {
 
   // Handle create empty project
   const handleCreateEmptyProject = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    
     // Generate a unique ID for the new project
     const newProjectId = Date.now().toString();
     navigate(`/canvas/${newProjectId}`);
@@ -184,7 +213,18 @@ const Home = () => {
 
   // Handle project card click
   const handleProjectClick = (projectId: number) => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    
     navigate(`/canvas/${projectId}`);
+  };
+
+  // Handle redirecting to auth page
+  const handleGoToAuth = () => {
+    closeAuthModal();
+    navigate('/authentication');
   };
 
   // Render usage limit information
@@ -220,6 +260,17 @@ const Home = () => {
         </Notification>
       )}
 
+      {/* Message Notification */}
+      {notificationMessage && (
+        <Notification 
+          color="blue" 
+          onClose={() => setNotificationMessage(null)}
+          mb="md"
+        >
+          {notificationMessage}
+        </Notification>
+      )}
+
       {/* Success Notification */}
       {generationSuccess && (
         <Notification 
@@ -231,6 +282,26 @@ const Home = () => {
           Your image has been generated successfully! Check your gallery to view it.
         </Notification>
       )}
+
+      {/* Authentication Required Modal */}
+      <Modal
+        opened={authModalOpened}
+        onClose={closeAuthModal}
+        title="Authentication Required"
+        centered
+        size="sm"
+      >
+        <Stack>
+          <Text size="sm">You need to be logged in to use this feature.</Text>
+          <Button 
+            onClick={handleGoToAuth} 
+            leftSection={<FaSignInAlt size={16} />}
+            fullWidth
+          >
+            Go to Login
+          </Button>
+        </Stack>
+      </Modal>
 
       {/* AI Generation Modal */}
       <Modal 
