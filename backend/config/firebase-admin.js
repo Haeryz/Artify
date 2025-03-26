@@ -19,16 +19,24 @@ if (!projectId || !clientEmail || !privateKey) {
   throw new Error('Incomplete Firebase configuration');
 }
 
+// Properly format private key for different environments
+// In some environments like Azure, the newlines in the private key are escaped
+let formattedPrivateKey = privateKey;
+if (privateKey.includes('\\n')) {
+  console.log('Converting escaped newlines in private key');
+  formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
+}
+
 // Initialize Firebase Admin SDK if not already initialized
 let firebaseAdmin = null;
 try {
   if (!admin.apps.length) {
+    console.log('Initializing new Firebase Admin SDK instance');
     firebaseAdmin = admin.initializeApp({
       credential: admin.credential.cert({
         projectId: projectId,
         clientEmail: clientEmail,
-        // Fix for Azure: ensure proper newline handling
-        privateKey: privateKey.replace(/\\n/g, '\n')
+        privateKey: formattedPrivateKey
       })
     });
     console.log('Firebase Admin SDK initialized successfully');
@@ -38,6 +46,7 @@ try {
   }
 } catch (error) {
   console.error('Error initializing Firebase Admin SDK:', error);
+  console.error('Error details:', error.message);
   throw error; // Re-throw to allow server.js to handle
 }
 

@@ -201,22 +201,24 @@ const googleLogin = async (req, res) => {
     const userAgent = req.headers['user-agent'] || 'unknown';
 
     try {
+      console.log('Attempting to verify Google ID token...');
+      
       // Check if Firebase Admin is initialized
       if (admin.apps.length === 0) {
-        return res.status(500).json({ message: 'Firebase Admin SDK not initialized' });
+        console.error('Firebase Admin SDK not initialized');
+        return res.status(500).json({ message: 'Authentication service unavailable' });
       }
 
       // Verify the ID token directly with Firebase Admin SDK
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const decodedToken = await admin.auth().verifyIdToken(idToken, true);
       
       // Get user information from the decoded token
       const uid = decodedToken.uid;
       const email = decodedToken.email;
-      const name = decodedToken.name;
-      const picture = decodedToken.picture;
+      const name = decodedToken.name || '';
+      const picture = decodedToken.picture || '';
       
-      // Log successful token verification
-      console.log(`Successfully verified token for user: ${uid}`);
+      console.log(`Successfully verified token for user: ${uid} (${email})`);
 
       // Get additional user info from Firebase Auth
       const firebaseUser = await admin.auth().getUser(uid);
@@ -258,8 +260,11 @@ const googleLogin = async (req, res) => {
         });
       }
 
+      // Create new token for the client with custom claims if needed
+      const customToken = await admin.auth().createCustomToken(uid);
+      
       // Create session
-      await createSession(uid, idToken, ipAddress, userAgent);
+      await createSession(uid, customToken, ipAddress, userAgent);
       
       // Get user data to return
       const userData = userDoc.exists() ? userDoc.data() : {
@@ -272,7 +277,7 @@ const googleLogin = async (req, res) => {
       // Return user data and token
       res.status(200).json({ 
         message: 'Google login successful',
-        token: idToken,
+        token: customToken, // Using a freshly created token for client
         expiresIn: 3600, // 1 hour in seconds
         user: {
           uid: userData.uid,
@@ -285,9 +290,15 @@ const googleLogin = async (req, res) => {
     } catch (verificationError) {
       console.error('ID token verification error:', verificationError);
       
+      // Provide more detailed error information in dev environment
+      const isDev = process.env.NODE_ENV !== 'production';
+      const errorDetails = isDev ? 
+        { detail: verificationError.code || 'Token verification failed', message: verificationError.message } :
+        { detail: 'Authentication failed' };
+      
       return res.status(401).json({ 
         message: 'Invalid authentication token',
-        detail: verificationError.code || 'Token verification failed'
+        ...errorDetails
       });
     }
   } catch (error) {

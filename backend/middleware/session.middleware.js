@@ -2,6 +2,7 @@ import admin from 'firebase-admin';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
 import { sessionSecurity } from '../model/security.model.js';
+import CryptoJS from 'crypto-js';
 
 // Session collection in Firestore
 const SESSION_COLLECTION = 'sessions';
@@ -18,7 +19,7 @@ export const createSession = async (userId, token, ipAddress = null, userAgent =
     // Create a session document with enhanced security
     await setDoc(doc(db, SESSION_COLLECTION, userId), {
       userId,
-      token: token ? await encryptToken(token) : null, // Consider encrypting tokens
+      token: token ? encryptToken(token) : null, // Encrypt token synchronously
       lastActivity: serverTimestamp(),
       createdAt: serverTimestamp(),
       expiresAt: new Date(Date.now() + sessionSecurity.expiryTimeMs),
@@ -132,18 +133,20 @@ export const validateSession = async (userId, ipAddress = null) => {
   }
 };
 
-// Implement proper token encryption using crypto-js
-const encryptToken = async (token) => {
+// Implement proper token encryption using crypto-js (synchronous version)
+const encryptToken = (token) => {
   try {
     // In a production environment, use environment variables for the secret key
     const secretKey = process.env.TOKEN_ENCRYPTION_SECRET || 'your-fallback-secret-key-change-in-production';
     
-    // Import crypto-js components
-    const CryptoJS = await import('crypto-js');
+    // Check if CryptoJS is available
+    if (!CryptoJS || !CryptoJS.AES) {
+      console.warn('CryptoJS not properly loaded, returning unencrypted token');
+      return token;
+    }
     
     // Encrypt the token
     const encrypted = CryptoJS.AES.encrypt(token, secretKey).toString();
-    
     return encrypted;
   } catch (error) {
     console.error('Error encrypting token:', error);
@@ -157,17 +160,19 @@ const encryptToken = async (token) => {
  * @param {string} encryptedToken - The encrypted token
  * @returns {string} - The decrypted token
  */
-const decryptToken = async (encryptedToken) => {
+const decryptToken = (encryptedToken) => {
   try {
     // Use the same secret key as for encryption
     const secretKey = process.env.TOKEN_ENCRYPTION_SECRET || 'your-fallback-secret-key-change-in-production';
     
-    // Import crypto-js components
-    const CryptoJS = await import('crypto-js');
+    // Check if CryptoJS is available
+    if (!CryptoJS || !CryptoJS.AES) {
+      console.warn('CryptoJS not properly loaded, cannot decrypt token');
+      return null;
+    }
     
     // Decrypt the token
     const decrypted = CryptoJS.AES.decrypt(encryptedToken, secretKey).toString(CryptoJS.enc.Utf8);
-    
     return decrypted;
   } catch (error) {
     console.error('Error decrypting token:', error);
