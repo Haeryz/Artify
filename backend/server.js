@@ -25,15 +25,50 @@ try {
 // Initialize express app
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware - Enhanced helmet configuration with CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://apis.google.com", "https://www.gstatic.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https://storage.googleapis.com", "https://*.googleusercontent.com"],
+      connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseio.com", "https://*.cloudfunctions.net"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'self'", "https://*.firebaseapp.com"]
+    }
+  },
+  // Force HTTPS in production
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  // Prevent browsers from sniffing MIME types
+  noSniff: true,
+  // XSS Protection
+  xssFilter: true
+}));
+
+// More restrictive CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // Restrict in production
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   maxAge: 3600
 }));
+
+// Additional security headers
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Standard middleware
 app.use(express.json({ limit: '1mb' })); // Limit request size
@@ -79,12 +114,12 @@ app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Error handler middleware
+// Error handler middleware - Improved to hide details in production
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
     message: 'Server Error', 
-    error: process.env.NODE_ENV === 'development' ? err.message : {} 
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined 
   });
 });
 
