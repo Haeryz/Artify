@@ -202,15 +202,15 @@ const googleLogin = async (req, res) => {
     const ipAddress = req.clientIp || req.ip || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
 
-    // Create a credential from the Google ID token
-    const credential = GoogleAuthProvider.credential(idToken);
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
     
-    // Sign in with credential
-    const userCredential = await signInWithCredential(auth, credential);
-    const firebaseUser = userCredential.user;
+    // Get user from Firebase Auth
+    const firebaseUser = await admin.auth().getUser(uid);
 
     // Get user from Firestore
-    const userDocRef = doc(db, USERS_COLLECTION, firebaseUser.uid);
+    const userDocRef = doc(db, USERS_COLLECTION, uid);
     const userDoc = await getDoc(userDocRef);
     
     // Update or create user data
@@ -246,11 +246,8 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    // Get ID token
-    const token = await firebaseUser.getIdToken();
-    
     // Create user session with device info
-    await createSession(firebaseUser.uid, token, ipAddress, userAgent);
+    await createSession(uid, idToken, ipAddress, userAgent);
     
     // Get user data to return
     const userData = userDoc.exists() ? userDoc.data() : {
@@ -263,7 +260,7 @@ const googleLogin = async (req, res) => {
     // Return user data and token
     res.status(200).json({ 
       message: 'Google login successful',
-      token,
+      token: idToken,
       expiresIn: 24 * 60 * 60, // 24 hours in seconds
       user: {
         uid: userData.uid,
@@ -278,6 +275,10 @@ const googleLogin = async (req, res) => {
     let errorMessage = 'Failed to authenticate with Google';
     if (error.code === 'auth/invalid-credential') {
       errorMessage = 'Invalid Google credential';
+    } else if (error.code === 'auth/id-token-expired') {
+      errorMessage = 'Google credential expired. Please try again.';
+    } else if (error.code === 'auth/id-token-revoked') {
+      errorMessage = 'Google credential has been revoked. Please sign in again.';
     }
     
     res.status(401).json({ message: errorMessage });
