@@ -16,6 +16,7 @@ import {
 import { USERS_COLLECTION } from '../model/authentication.model.js';
 import { PROMPTS_COLLECTION, promptLimits } from '../model/prompt.model.js';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { sanitizeInput, isValidDocumentId } from '../utils/validation.js';
 
 // Initialize Gemini API
 const apiKey = process.env.GEMINI_API_KEY;
@@ -25,6 +26,26 @@ const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-flash-exp-image-generation",
 });
+
+// Safety settings to prevent harmful content generation
+const safetySettings = [
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+];
 
 // Default generation config
 const defaultGenerationConfig = {
@@ -41,6 +62,10 @@ const defaultGenerationConfig = {
  * @returns {Object} - Status of the limit check
  */
 const checkAndUpdatePromptLimits = async (userId) => {
+  if (!isValidDocumentId(userId)) {
+    return { allowed: false, error: 'Invalid user ID format' };
+  }
+
   const userDocRef = doc(db, USERS_COLLECTION, userId);
   const userDoc = await getDoc(userDocRef);
   
@@ -103,17 +128,22 @@ export const generateImage = async (req, res) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    const { prompt, config } = req.body;
+    // Already validated by Joi schema
+    const { prompt, model: modelName, options } = req.body;
     
-    if (!prompt) {
-      return res.status(400).json({ message: 'Prompt text is required' });
-    }
+    // Additional sanitization
+    const sanitizedPrompt = sanitizeInput(prompt);
     
     // Validate prompt length
-    if (prompt.length > promptLimits.maxLength) {
+    if (sanitizedPrompt.length > promptLimits.maxLength) {
       return res.status(400).json({ 
         message: `Prompt exceeds maximum length of ${promptLimits.maxLength} characters` 
       });
+    }
+
+    // Validate model type
+    if (modelName && !['gemini-2.0-flash-exp-image-generation'].includes(modelName)) {
+      return res.status(400).json({ message: 'Invalid model specified' });
     }
     
     // Check user limits
@@ -127,15 +157,26 @@ export const generateImage = async (req, res) => {
     }
     
     // Create generation config merging defaults with user preferences
-    const generationConfig = {
-      ...defaultGenerationConfig,
-      ...(config || {})
-    };
+    // But limit options to prevent abuse
+    const generationConfig = { ...defaultGenerationConfig };
+    
+    if (options) {
+      // Only allow specific config options with bounds checking
+      if (options.temperature !== undefined) {
+        generationConfig.temperature = Math.min(Math.max(options.temperature, 0), 1);
+      }
+      if (options.topP !== undefined) {
+        generationConfig.topP = Math.min(Math.max(options.topP, 0), 1);
+      }
+      if (options.topK !== undefined) {
+        generationConfig.topK = Math.min(Math.max(options.topK, 1), 40);
+      }
+    }
     
     // Store prompt request in Firestore
     const promptRef = await addDoc(collection(db, PROMPTS_COLLECTION), {
       userId: req.user.uid,
-      text: prompt,
+      text: sanitizedPrompt,
       status: 'pending',
       createdAt: serverTimestamp(),
       generationConfig,
@@ -146,7 +187,7 @@ export const generateImage = async (req, res) => {
     });
     
     // Start async generation - we'll update the document when complete
-    generateImageAsync(promptRef.id, prompt, generationConfig)
+    generateImageAsync(promptRef.id, sanitizedPrompt, generationConfig)
       .catch(error => console.error(`Error generating image for prompt ${promptRef.id}:`, error));
     
     // Return success with the prompt ID
@@ -174,9 +215,10 @@ const generateImageAsync = async (promptId, promptText, generationConfig) => {
     const promptDocRef = doc(db, PROMPTS_COLLECTION, promptId);
     
     try {
-      // Create chat session and send message
+      // Create chat session and send message with safety settings
       const chatSession = model.startChat({
         generationConfig,
+        safetySettings,
         history: [],
       });
       
@@ -185,7 +227,6 @@ const generateImageAsync = async (promptId, promptText, generationConfig) => {
       
       // Extract image URL from response if text contains a URL
       // Note: This is a simplified approach - actual implementation will depend on Gemini's response format
-      // In a real implementation, you would need to handle the actual response format from Gemini
       const imageUrl = extractImageUrl(responseText);
       
       // Update prompt document with success
@@ -218,12 +259,12 @@ const generateImageAsync = async (promptId, promptText, generationConfig) => {
  */
 const extractImageUrl = (text) => {
   // This is a placeholder - you would need to implement based on actual Gemini response format
-  // For example, if the API returns a JSON string with a URL
   try {
     if (text.includes('http')) {
-      // Very simplistic URL extraction - in production use a proper URL extractor
-      const urlMatch = text.match(/(https?:\/\/[^\s]+)/g);
-      return urlMatch ? urlMatch[0] : null;
+      // Use a safer URL extraction method
+      const urlRegex = /(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*))/;
+      const match = text.match(urlRegex);
+      return match ? match[0] : null;
     }
     return null;
   } catch (error) {
@@ -245,8 +286,9 @@ export const getPrompt = async (req, res) => {
     
     const { promptId } = req.params;
     
-    if (!promptId) {
-      return res.status(400).json({ message: 'Prompt ID is required' });
+    // Validate prompt ID
+    if (!promptId || !isValidDocumentId(promptId)) {
+      return res.status(400).json({ message: 'Invalid prompt ID format' });
     }
     
     // Get prompt document
@@ -290,13 +332,17 @@ export const getUserPrompts = async (req, res) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
+    // Pagination parameters with validation
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = Math.min(parseInt(req.query.pageSize) || 10, 50); // Maximum 50 items per page
+    
     // Query prompts for user, sorted by creation date
     const promptsRef = collection(db, PROMPTS_COLLECTION);
     const q = query(
       promptsRef, 
       where('userId', '==', req.user.uid),
       orderBy('createdAt', 'desc'),
-      limit(50) // Limit to 50 most recent prompts
+      limit(pageSize)
     );
     
     const querySnapshot = await getDocs(q);
@@ -315,7 +361,15 @@ export const getUserPrompts = async (req, res) => {
     });
     
     // Return user's prompts
-    res.status(200).json({ prompts });
+    res.status(200).json({ 
+      prompts,
+      pagination: {
+        page,
+        pageSize,
+        total: prompts.length, // In a real app, you would implement proper pagination
+        hasMore: prompts.length === pageSize
+      }
+    });
   } catch (error) {
     console.error('Error getting user prompts:', error);
     res.status(500).json({ message: 'Failed to get prompts' });

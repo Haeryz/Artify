@@ -18,15 +18,17 @@ import {
 import { USERS_COLLECTION } from '../model/authentication.model.js';
 import { createSession, deleteSession, validateSession } from '../middleware/session.middleware.js';
 import { validatePasswordStrength, trackLoginAttempt } from '../middleware/security.middleware.js';
+import { sanitizeInput, sanitizeEmail, sanitizeObject } from '../utils/validation.js';
 
 // Register a new user
 const signup = async (req, res) => {
   try {
+    // Using Joi validation, the body is already validated and sanitized
     const { email, password, displayName } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+    
+    // Extra sanitization for sensitive fields
+    const sanitizedEmail = sanitizeEmail(email);
+    const sanitizedDisplayName = sanitizeInput(displayName);
 
     // Validate password strength
     const passwordValidation = validatePasswordStrength(password);
@@ -38,14 +40,14 @@ const signup = async (req, res) => {
     }
 
     // Create user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, password);
     const firebaseUser = userCredential.user;
     
     // Prepare user data for Firestore
     const userData = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
-      displayName: displayName || email.split('@')[0],
+      displayName: sanitizedDisplayName || sanitizedEmail.split('@')[0],
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp(),
       securityInfo: {
@@ -86,16 +88,15 @@ const signup = async (req, res) => {
 // Login user
 const login = async (req, res) => {
   try {
+    // Using Joi validation, the body is already validated
     const { email, password } = req.body;
+    const sanitizedEmail = sanitizeEmail(email);
+    
     const ipAddress = req.clientIp || req.ip || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
     // Track login attempt and check for too many attempts
-    const failedAttempts = await trackLoginAttempt(email, ipAddress, false);
+    const failedAttempts = await trackLoginAttempt(sanitizedEmail, ipAddress, false);
     if (failedAttempts >= 5) {
       return res.status(429).json({ 
         message: 'Too many failed login attempts. Please try again later.',
@@ -104,11 +105,11 @@ const login = async (req, res) => {
     }
 
     // Sign in with Firebase Auth
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, sanitizedEmail, password);
     const firebaseUser = userCredential.user;
 
     // Record successful login
-    await trackLoginAttempt(email, ipAddress, true);
+    await trackLoginAttempt(sanitizedEmail, ipAddress, true);
 
     // Get user from Firestore
     const userDocRef = doc(db, USERS_COLLECTION, firebaseUser.uid);
@@ -133,10 +134,11 @@ const login = async (req, res) => {
       });
     } else {
       // Create user in Firestore if not exists (rare case)
+      const safeUsername = sanitizedEmail.split('@')[0];
       await setDoc(userDocRef, {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        displayName: firebaseUser.displayName || email.split('@')[0],
+        displayName: firebaseUser.displayName || safeUsername,
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
         securityInfo: {
@@ -162,7 +164,7 @@ const login = async (req, res) => {
       user: {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        displayName: userDoc.exists() ? userDoc.data().displayName : (firebaseUser.displayName || email.split('@')[0])
+        displayName: userDoc.exists() ? userDoc.data().displayName : (firebaseUser.displayName || sanitizedEmail.split('@')[0])
       }
     });
   } catch (error) {
@@ -171,7 +173,8 @@ const login = async (req, res) => {
     // Track failed login attempt
     try {
       const ipAddress = req.clientIp || req.ip || 'unknown';
-      await trackLoginAttempt(req.body.email || '', ipAddress, false);
+      const sanitizedEmail = sanitizeEmail(req.body.email || '');
+      await trackLoginAttempt(sanitizedEmail, ipAddress, false);
     } catch (trackingError) {
       console.error('Error tracking failed login:', trackingError);
     }
@@ -191,12 +194,13 @@ const login = async (req, res) => {
 const googleLogin = async (req, res) => {
   try {
     const { idToken } = req.body;
-    const ipAddress = req.clientIp || req.ip || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
-
+    
     if (!idToken) {
       return res.status(400).json({ message: 'Google ID token is required' });
     }
+    
+    const ipAddress = req.clientIp || req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
 
     // Create a credential from the Google ID token
     const credential = GoogleAuthProvider.credential(idToken);
@@ -221,10 +225,12 @@ const googleLogin = async (req, res) => {
       });
     } else {
       // Create user in Firestore if this is their first login
+      const safeDisplayName = sanitizeInput(firebaseUser.displayName) || 'Google User';
+      
       await setDoc(userDocRef, {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        displayName: firebaseUser.displayName || 'Google User',
+        displayName: safeDisplayName,
         photoURL: firebaseUser.photoURL || null,
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
@@ -250,7 +256,7 @@ const googleLogin = async (req, res) => {
     const userData = userDoc.exists() ? userDoc.data() : {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
-      displayName: firebaseUser.displayName || 'Google User',
+      displayName: sanitizeInput(firebaseUser.displayName) || 'Google User',
       photoURL: firebaseUser.photoURL
     };
     
@@ -327,7 +333,8 @@ const getCurrentUser = async (req, res) => {
         uid: userData.uid,
         email: userData.email,
         displayName: userData.displayName,
-        // Include other non-sensitive user data as needed
+        photoURL: userData.photoURL || null,
+        // Exclude sensitive data
       }
     });
   } catch (error) {
@@ -343,11 +350,18 @@ const updateUserProfile = async (req, res) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    const { displayName } = req.body;
+    // Already validated by Joi schema
+    const { displayName, photoURL, bio } = req.body;
+    
+    // Sanitize inputs (extra protection)
+    const sanitizedDisplayName = sanitizeInput(displayName);
+    const sanitizedBio = sanitizeInput(bio);
     
     // Only allow updating specific fields
     const updateData = {};
-    if (displayName) updateData.displayName = displayName;
+    if (displayName) updateData.displayName = sanitizedDisplayName;
+    if (photoURL !== undefined) updateData.photoURL = photoURL; // Already validated as URI by Joi
+    if (bio !== undefined) updateData.bio = sanitizedBio;
     
     // If there's nothing to update
     if (Object.keys(updateData).length === 0) {
@@ -405,11 +419,8 @@ const changePassword = async (req, res) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
+    // Already validated by Joi schema
     const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Current password and new password are required' });
-    }
 
     // Validate new password strength
     const passwordValidation = validatePasswordStrength(newPassword);
@@ -425,7 +436,8 @@ const changePassword = async (req, res) => {
       // Firebase doesn't have a direct "verify password" method
       // This is a workaround using signIn with email and current password
       const email = req.user.email;
-      await signInWithEmailAndPassword(auth, email, currentPassword);
+      const sanitizedEmail = sanitizeEmail(email);
+      await signInWithEmailAndPassword(auth, sanitizedEmail, currentPassword);
       
       // Change password
       const currentUser = auth.currentUser;
