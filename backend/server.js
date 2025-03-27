@@ -52,15 +52,32 @@ app.use(helmet({
   xssFilter: true
 }));
 
-// More restrictive CORS configuration
+// More flexible CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, 'https://artify.haeryz.me']
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'https://artify.haeryz.me'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.NODE_ENV === 'production'
+      ? ['https://artify.haeryz.me']
+      : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'https://artify.haeryz.me'];
+    
+    // Always include FRONTEND_URL from env if it exists
+    if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+      allowedOrigins.push(process.env.FRONTEND_URL);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked request from:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
-  maxAge: 3600
+  maxAge: 86400 // 24 hours
 }));
 
 // Additional security headers
