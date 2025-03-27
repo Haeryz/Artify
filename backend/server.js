@@ -55,7 +55,7 @@ app.use(helmet({
 // More restrictive CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+    ? [process.env.FRONTEND_URL, 'https://artify.haeryz.me']
     : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'https://artify.haeryz.me'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
