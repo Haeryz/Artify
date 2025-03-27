@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:23-alpine
 
 # Create a non-root user to run the application
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
