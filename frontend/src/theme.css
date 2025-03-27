@@ -11,4 +11,47 @@
 body {
   background-color: var(--content-background);
   color: var(--content-text);
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Font display swap to prevent invisible text during loading */
+@font-face {
+  font-family: 'System Font';
+  src: local('system-ui'), local('-apple-system'), local('BlinkMacSystemFont');
+  font-display: swap;
+}
+
+/* Improved image rendering */
+img {
+  max-width: 100%;
+  height: auto;
+  content-visibility: auto;
+}
+
+/* Reduce CLS by setting aspect ratios for common components */
+.image-container {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Modern loading pattern to improve LCP */
+.lazy-load {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.lazy-load.loaded {
+  opacity: 1;
+}
+
+/* Reduce unnecessary animations on reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
